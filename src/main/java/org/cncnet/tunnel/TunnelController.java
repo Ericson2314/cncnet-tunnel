@@ -108,7 +108,7 @@ public class TunnelController implements HttpHandler, Runnable {
 
         if (!pwOk) {
             // Unauthorized
-            Main.log("Request was unauthorized.");
+        	Main.log("Request was unauthorized.");
             t.sendResponseHeaders(401, 0);
             t.getResponseBody().close();
             return;

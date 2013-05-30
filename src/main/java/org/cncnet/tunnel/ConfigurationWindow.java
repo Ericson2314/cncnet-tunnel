@@ -18,6 +18,8 @@ package org.cncnet.tunnel;
 import javax.swing.ImageIcon;
 import javax.swing.JSpinner;
 
+import scala.Option;
+
 /**
  *
  * @author Toni Spets <toni.spets@iki.fi>
@@ -29,7 +31,7 @@ public class ConfigurationWindow extends javax.swing.JFrame {
      */
     public ConfigurationWindow() {
         initComponents();
-        setIconImage(new ImageIcon(Main.class.getResource("res/cncnet-icon.png")).getImage());
+        setIconImage(new ImageIcon("res/cncnet-icon.png").getImage());
     }
 
     /**
@@ -181,21 +183,17 @@ public class ConfigurationWindow extends javax.swing.JFrame {
     private void startButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_startButtonActionPerformed
         this.setVisible(false);
 
-        if (nameField.getText().length() > 0) {
-            Main.name = nameField.getText();
-        }
+        final Option<String> name = nameField.getText().length() > 0 ? Option.<String>apply(null) : Option.apply(nameField.getText());
 
-        Main.maxclients = (Integer)maxClients.getValue();
+        final int maxclients = (Integer)maxClients.getValue();
+        
+        final Option<String> password = nameField.getText().length() > 0 ? Option.<String>apply(null) : Option.apply(passwordField.getText());
 
-        if (passwordField.getText().length() > 0) {
-            Main.password = passwordField.getText();
-        }
-
-        Main.nomaster = !masterCheck.isSelected();
+        final boolean nomaster = !masterCheck.isSelected();
 
         new Thread(new Runnable() {
             public void run() {
-                Main.start();
+                Main.start(name, maxclients, password, nomaster);
             }
         }).start();
     }//GEN-LAST:event_startButtonActionPerformed

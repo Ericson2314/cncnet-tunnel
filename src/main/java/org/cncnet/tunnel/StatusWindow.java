@@ -41,7 +41,7 @@ public class StatusWindow extends JFrame {
     public StatusWindow() {
 
         setTitle("CnCNet Tunnel");
-        setIconImage(new ImageIcon(Main.class.getResource("res/cncnet-icon.png")).getImage());
+        setIconImage(new ImageIcon("res/cncnet-icon.png").getImage());
 
         JPanel mainPanel = new JPanel();
         mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));

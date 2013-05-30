@@ -23,10 +23,10 @@ class Logger (
 
   val log: Array[String] => Unit = {
     val extraPrint: String => Unit = (logStream, statusWindow) match {
-      case (None, None)         => _ => () // no-op
-      case (None, Some(window)) => window.log
-      case (Some(_), None)      => appendToFile
-      case (Some(_), None)      => line: String => { statusWindow.get.log(line); appendToFile(line) }
+      case (None, None)            => _ => () // no-op
+      case (None, Some(window))    => window.log
+      case (Some(_), None)         => appendToFile
+      case (Some(_), Some(window)) => line: String => { window.log(line); appendToFile(line) }
     }
 
     lines: Array[String] => lines.map(rawLine => {

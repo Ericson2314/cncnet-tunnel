@@ -44,7 +44,9 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author Toni Spets <toni.spets@iki.fi>
  */
 public class TunnelController implements HttpHandler, Runnable {
-
+	
+	private final Logger logger;
+	
     private BlockingQueue<DatagramChannel> pool;
     private Map<DatagramChannel, Router> routers;
     private Map<String, Router> locks;
@@ -56,8 +58,19 @@ public class TunnelController implements HttpHandler, Runnable {
     private String master;
     private String masterpw = null;
 
-    public TunnelController(List<DatagramChannel> channels, String name, String password, int port, int maxclients, String master, String masterpw) {
-        pool = new ArrayBlockingQueue<DatagramChannel>(channels.size(), true, channels);
+    public TunnelController(
+    	Logger logger,
+    	List<DatagramChannel> channels,
+    	String name,
+    	String password,
+    	int port,
+    	int maxclients,
+    	String master,
+    	String masterpw
+    ) {
+        this.logger = logger;
+    	
+    	pool = new ArrayBlockingQueue<DatagramChannel>(channels.size(), true, channels);
         routers = new ConcurrentHashMap<DatagramChannel, Router>();
         locks = new ConcurrentHashMap<String, Router>();
 
@@ -108,7 +121,7 @@ public class TunnelController implements HttpHandler, Runnable {
 
         if (!pwOk) {
             // Unauthorized
-        	Main.log("Request was unauthorized.");
+        	logger.log("Request was unauthorized.");
             t.sendResponseHeaders(401, 0);
             t.getResponseBody().close();
             return;
@@ -116,7 +129,7 @@ public class TunnelController implements HttpHandler, Runnable {
 
         if (addresses.size() < 2 || addresses.size() > 8) {
             // Bad Request
-            Main.log("Request had invalid amount of addresses.");
+            logger.log("Request had invalid amount of addresses.");
             t.sendResponseHeaders(400, 0);
             t.getResponseBody().close();
             return;
@@ -125,7 +138,7 @@ public class TunnelController implements HttpHandler, Runnable {
         // lock the request ip out until this router is collected
         if (locks.containsKey(requestAddress)) {
             // Too Many Requests
-            Main.log("Same address tried to request more than one active router.");
+            logger.log("Same address tried to request more than one active router.");
             t.sendResponseHeaders(429, 0);
             t.getResponseBody().close();
             return;
@@ -143,7 +156,7 @@ public class TunnelController implements HttpHandler, Runnable {
             // if not enough 
             pool.addAll(clients.values());
             // Service Unavailable
-            Main.log("Request wanted more than we could provide.");
+            logger.log("Request wanted more than we could provide.");
             t.sendResponseHeaders(503, 0);
             t.getResponseBody().close();
             return;
@@ -160,7 +173,7 @@ public class TunnelController implements HttpHandler, Runnable {
         for (Entry<InetAddress, DatagramChannel> entry : entries) {
             DatagramChannel channel = entry.getValue();
             InetAddress address = entry.getKey();
-            Main.log("Port " + channel.socket().getLocalPort() + " allocated for " + address.toString() + " in router " + router.hashCode() + ".");
+            logger.log("Port " + channel.socket().getLocalPort() + " allocated for " + address.toString() + " in router " + router.hashCode() + ".");
             routers.put(channel, router);
         }
 
@@ -172,7 +185,7 @@ public class TunnelController implements HttpHandler, Runnable {
 
     private void handleStatus(HttpExchange t) throws IOException {
         String response = pool.size() + " slots free.\n" + routers.size() + " slots in use.\n";
-        Main.log("Response: " + response);
+        logger.log("Response: " + response);
         t.sendResponseHeaders(200, response.length());
         OutputStream os = t.getResponseBody();
         os.write(response.getBytes());
@@ -184,7 +197,7 @@ public class TunnelController implements HttpHandler, Runnable {
         String uri = t.getRequestURI().toString();
         t.getRequestBody().close();
 
-        Main.log("HTTPRequest: " + uri);
+        logger.log("HTTPRequest: " + uri);
 
         try {
             if (uri.startsWith("/request")) {
@@ -195,7 +208,7 @@ public class TunnelController implements HttpHandler, Runnable {
                 t.sendResponseHeaders(400, 0);
             }
         } catch (IOException e) {
-            Main.log("Error: " + e.getMessage());
+            logger.log("Error: " + e.getMessage());
             String error = e.getMessage();
             t.sendResponseHeaders(500, error.length());
             OutputStream os = t.getResponseBody();
@@ -209,9 +222,9 @@ public class TunnelController implements HttpHandler, Runnable {
 
         long lastHeartbeat = 0;
 
-        Main.status("Connecting...");
+        logger.status("Connecting...");
 
-        Main.log("TunnelController started.");
+        logger.log("TunnelController started.");
 
         boolean connected = false;
 
@@ -220,7 +233,7 @@ public class TunnelController implements HttpHandler, Runnable {
             long now = System.currentTimeMillis();
 
             if (lastHeartbeat + 60000 < now && master != null) {
-                Main.log("Sending a heartbeat to master server.");
+                logger.log("Sending a heartbeat to master server.");
 
                 connected = false;
                 try {
@@ -242,11 +255,11 @@ public class TunnelController implements HttpHandler, Runnable {
                     con.disconnect();
                     connected = true;
                 } catch (FileNotFoundException e) {
-                    Main.log("Master server reported error 404.");
+                    logger.log("Master server reported error 404.");
                 } catch (MalformedURLException e) {
-                    Main.log("Failed to send heartbeat: " + e.toString());
+                    logger.log("Failed to send heartbeat: " + e.toString());
                 } catch (IOException e) {
-                    Main.log("Failed to send heartbeat: " + e.toString());
+                    logger.log("Failed to send heartbeat: " + e.toString());
                 }
 
                 lastHeartbeat = now;
@@ -260,7 +273,7 @@ public class TunnelController implements HttpHandler, Runnable {
 
                 if (router.getLastPacket() + 60000 < now) {
                     DatagramChannel channel = e.getKey();
-                    Main.log("Port " + channel.socket().getLocalPort() +  " timed out from router " + router.hashCode() + ".");
+                    logger.log("Port " + channel.socket().getLocalPort() +  " timed out from router " + router.hashCode() + ".");
                     pool.add(channel);
                     i.remove();
 
@@ -270,7 +283,7 @@ public class TunnelController implements HttpHandler, Runnable {
                 }
             }
 
-            Main.status(
+            logger.status(
                 (connected ? "Connected. " : "Disconnected from master. ") +
                 routers.size() + " / " + maxclients + " players online."
             );

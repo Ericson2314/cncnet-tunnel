@@ -17,6 +17,8 @@ package org.cncnet.tunnel;
 
 import javax.swing.ImageIcon;
 import javax.swing.JSpinner;
+import javax.swing.SpinnerModel;
+import javax.swing.SpinnerNumberModel;
 
 import scala.Option;
 
@@ -24,13 +26,18 @@ import scala.Option;
  *
  * @author Toni Spets <toni.spets@iki.fi>
  */
+@SuppressWarnings("serial")
 public class ConfigurationWindow extends javax.swing.JFrame {
+	final Conf conf;
+	final Logger logger;
 
     /**
      * Creates new form ConfigurationWindow
      */
-    public ConfigurationWindow() {
-        initComponents();
+    public ConfigurationWindow(final Conf conf, final Logger logger) {
+    	this.conf   = conf;
+    	this.logger = logger;
+        initComponents(conf);
         setIconImage(new ImageIcon("res/cncnet-icon.png").getImage());
     }
 
@@ -41,17 +48,21 @@ public class ConfigurationWindow extends javax.swing.JFrame {
      */
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
-    private void initComponents() {
+    private void initComponents(Conf conf) {
 
         jLabel1 = new javax.swing.JLabel();
         jLabel2 = new javax.swing.JLabel();
         jLabel3 = new javax.swing.JLabel();
-        passwordField = new javax.swing.JTextField();
-        nameField = new javax.swing.JTextField();
+        
+        passwordField = new javax.swing.JTextField(conf.password().apply());
+        nameField = new javax.swing.JTextField(conf.password().apply());
+        
         masterCheck = new javax.swing.JCheckBox();
+        masterCheck.setSelected(!conf.nomaster().isSupplied());
+        
         startButton = new javax.swing.JButton();
         cancelButton = new javax.swing.JButton();
-        maxClients = new javax.swing.JSpinner();
+        maxClients = new javax.swing.JSpinner((SpinnerModel) new SpinnerNumberModel(conf.getMaxClients(), 0, Main.maxPort(), 1));
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("CnCNet Tunnel - Configuration");
@@ -193,45 +204,11 @@ public class ConfigurationWindow extends javax.swing.JFrame {
 
         new Thread(new Runnable() {
             public void run() {
-                Main.start(name, maxclients, password, nomaster);
+                Main.start(conf, logger, name, maxclients, password, nomaster);
             }
         }).start();
     }//GEN-LAST:event_startButtonActionPerformed
 
-    /**
-     * @param args the command line arguments
-     */
-    public static void main(String args[]) {
-        /* Set the Nimbus look and feel */
-        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
-        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
-         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
-         */
-        try {
-            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
-                if ("Nimbus".equals(info.getName())) {
-                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
-                    break;
-                }
-            }
-        } catch (ClassNotFoundException ex) {
-            java.util.logging.Logger.getLogger(ConfigurationWindow.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (InstantiationException ex) {
-            java.util.logging.Logger.getLogger(ConfigurationWindow.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (IllegalAccessException ex) {
-            java.util.logging.Logger.getLogger(ConfigurationWindow.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (javax.swing.UnsupportedLookAndFeelException ex) {
-            java.util.logging.Logger.getLogger(ConfigurationWindow.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        }
-        //</editor-fold>
-
-        /* Create and display the form */
-        java.awt.EventQueue.invokeLater(new Runnable() {
-            public void run() {
-                new ConfigurationWindow().setVisible(true);
-            }
-        });
-    }
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton cancelButton;
     private javax.swing.JLabel jLabel1;

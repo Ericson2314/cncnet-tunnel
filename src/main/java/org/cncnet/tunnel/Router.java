@@ -23,6 +23,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import scala.Option;
+
 /**
  *
  * @author Toni Spets <toni.spets@iki.fi>
@@ -44,7 +46,7 @@ public class Router {
         }
 
         for (Map.Entry<InetAddress, DatagramChannel> entry : ipMap.entrySet()) {
-            portMap.put(entry.getValue(), new Port(entry.getKey(), chanList));
+            portMap.put(entry.getValue(), Port.apply(entry.getKey(), chanList));
         }
     }
 
@@ -80,10 +82,10 @@ public class Router {
         Port outPort = portMap.get(outChannel);
         outPort.setRoute(channel, source.getPort());
 
-        InetAddress dstIp = inPort.getIp();
-        int dstPort = inPort.getRoute(outChannel);
+        InetAddress dstIp = inPort.ip();
+        Option<Integer> dstPort = inPort.getRoute(outChannel);
 
-        if (dstPort == 0) {
+        if (!dstPort.isDefined) {
             return null;
         }
 

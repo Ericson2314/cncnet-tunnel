@@ -5,19 +5,22 @@ import java.io.FileOutputStream
 import java.io.IOException
 import java.util.Date;
 
+object Logger {
+  def apply(file: Option[String], sw: Option[StatusWindow]): Logger = try {
+    new Logger(file.map(f => new FileOutputStream(new File(f), true)), sw)
+  } catch {
+    case e: IOException => {
+      val logger = new Logger(None, sw)
+      logger.log("file for logging could not be written to")
+      logger // return this from block
+    }
+  }
+}
+
 class Logger (
   val logStream: Option[FileOutputStream],
   val statusWindow: Option[StatusWindow]
 ) {
-
-  def this(file: Option[String], sw: Option[StatusWindow]) = this(
-    file match {
-      case Some(f) => try { Some(new FileOutputStream(new File(f), true)) } catch { case _ => None }
-      case _       => None
-    },
-    sw
-  )
-  
   
   def log(msg: String): Unit = log(msg.split("\n"))
 

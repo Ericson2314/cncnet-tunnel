@@ -33,12 +33,12 @@ import javax.swing.border.EmptyBorder;
  *
  * @author Toni Spets <toni.spets@iki.fi>
  */
-public class StatusWindow extends JFrame {
+public class StatusWindow2 extends JFrame {
 
     private JTextArea logArea;
     private JLabel statusLabel;
 
-    public StatusWindow() {
+    public StatusWindow2() {
 
         setTitle("CnCNet Tunnel");
         setIconImage(new ImageIcon("res/cncnet-icon.png").getImage());

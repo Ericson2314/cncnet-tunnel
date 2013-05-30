@@ -21,6 +21,8 @@ import javax.swing.SpinnerModel;
 import javax.swing.SpinnerNumberModel;
 
 import scala.Option;
+import scala.Some;
+import scala.None;
 
 /**
  *

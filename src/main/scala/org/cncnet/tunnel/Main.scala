@@ -1,21 +1,22 @@
 package org.cncnet.tunnel
 
-import org.rogach.scallop._;
-
-import com.sun.net.httpserver.HttpServer;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
-import java.nio.channels.DatagramChannel;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.List;
-import javax.swing.JFrame;
+import org.rogach.scallop._
+import com.sun.net.httpserver.HttpServer
+import java.io.FileOutputStream
+import java.io.IOException
+import java.net.InetSocketAddress
+import java.nio.ByteBuffer
+import java.nio.channels.DatagramChannel
+import java.nio.channels.SelectionKey
+import java.nio.channels.Selector
+import java.util.ArrayList
+import java.util.Date
+import java.util.Iterator
+import java.util.List
+import javax.swing.JFrame
 import javax.swing.UIManager;
+
+import scala.collection.JavaConverters._
 
 class Conf(arguments: Seq[String]) extends ScallopConf(arguments) {
   val name       = opt[String ](descr = "Custom name for the tunnel",                              required = false, default = Some("Unnamed CnCNet 5 tunnel"))
@@ -40,7 +41,7 @@ object Main {
   
   def main(args: Array[String]) {
     val conf = new Conf(args)
-    val logger = new Logger(conf.logfile.get, if (conf.headless.apply()) None else {
+    val logger = Logger(conf.logfile.get, if (conf.headless.apply()) None else {
       val statusWindow = new StatusWindow();
       statusWindow.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
       statusWindow.status("Initializing...");
@@ -64,7 +65,6 @@ object Main {
   }
 
   def start(conf: Conf, logger: Logger, name: Option[String], maxclients: Int, password: Option[String], nomaster: Boolean) {
-    val conf = new Conf();
     start(conf, logger)
   }
   
@@ -86,24 +86,25 @@ object Main {
     logger.log(if (conf.nomaster.apply()) "Master server disabled." else "Master     : " + conf.master.apply())
     logger.log(conf.logfile.get match {
       case Some(f) => "Logging to:   " + f
-      case None     => "***No Log File***"
+      case None    => "***No Log File***"
     })
 
     try {
       val selector: Selector = Selector.open();
       val channels = new ArrayList[DatagramChannel]();
 
-      for (offset <- 0 to conf.maxClients()) {
-        val channel: DatagramChannel = DatagramChannel.open();
-        channel.configureBlocking(false);
-        channel.socket().bind(new InetSocketAddress("0.0.0.0", conf.firstPort.apply() + offset));
-        channel.register(selector, SelectionKey.OP_READ);
-        channels.add(channel);
+      def createChannel (portNum: Int): DatagramChannel = {
+        val channel: DatagramChannel = DatagramChannel.open()
+        channel.configureBlocking(false)
+        channel.socket().bind(new InetSocketAddress(portNum))
+        channel.register(selector, SelectionKey.OP_READ)
+        channels.add(channel)
+        channel
       }
 
       val controller = new TunnelController(
         logger,
-        channels,
+        Array.range(0, conf.maxClients.apply).map(conf.firstPort.apply()+_).map(createChannel).toSeq,
         conf.name.apply(),
         conf.password.apply(),
         conf.firstPort.apply(),

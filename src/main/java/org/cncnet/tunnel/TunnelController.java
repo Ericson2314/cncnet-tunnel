@@ -28,6 +28,7 @@ import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.channels.DatagramChannel;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -38,6 +39,8 @@ import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
+
+import scala.actors.threadpool.Arrays;
 
 /**
  *
@@ -60,7 +63,7 @@ public class TunnelController implements HttpHandler, Runnable {
 
     public TunnelController(
     	Logger logger,
-    	List<DatagramChannel> channels,
+    	Collection<DatagramChannel> channels,
     	String name,
     	String password,
     	int port,

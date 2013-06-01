@@ -20,10 +20,10 @@ import scala.collection.JavaConverters._
 
 class Conf(arguments: Seq[String]) extends ScallopConf(arguments) {
   val name       = opt[String ](descr = "Custom name for the tunnel",                              required = false, default = Some("Unnamed CnCNet 5 tunnel"))
-  val maxClients = opt[Int    ](descr = "Maximum number of ports to allocate",                     required = false, default = Some(8), validate = (a => 8 > a && a > 2))
+  val maxClients = opt[Int    ](descr = "Maximum number of ports to allocate",                     required = false, default = Some(8), validate = (a => 8 >= a && a >= 2))
   val password   = opt[String ](descr = "Optional password to send to master when registering",    required = false)
   val firstPort  = opt[Int    ](descr = "Ports are allocated from this up, first doubles as HTTP", required = false, default = Some(50000),
-    validate = (a => 0 > a && a > Main.maxPort - maxClients.apply())
+    validate = (a => Main.maxPort - maxClients.apply() >= a && a >= 0)
   )
   val master     = opt[String ](descr = "Optional URL to a master server (default is hard-coded)", required = false, default = Some("http://cncnet.org/master-announce"))
   val masterPW   = opt[String ](descr = "Optional password to send to master when registering",    required = false)

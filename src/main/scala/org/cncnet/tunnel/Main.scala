@@ -107,11 +107,11 @@ object Main {
         logger,
         Array.range(0, conf.maxClients.apply).map(conf.firstPort.apply()+_).map(createChannel).toSeq,
         conf.name.apply(),
-        conf.password.apply(),
+        conf.password.get,
         conf.firstPort.apply(),
         conf.maxClients.apply(),
         if (conf.nomaster.apply()) null else conf.master.apply(),
-        conf.masterPW.apply()
+        conf.masterPW.get
       );
 
       // setup our HTTP server
@@ -154,7 +154,7 @@ object Main {
                 //Main.logger.log("Packet from " + from + " routed to " + res.getDestination() + ", was " + buf.position() + " bytes");
                 val len: Int = buf.position();
                 buf.flip();
-                res.getChannel().send(buf, res.getDestination());
+                res.channel.send(buf, res.destination);
               }
             } catch {
               case e: IOException => logger.log("IOException when handling event: " + e.getMessage());

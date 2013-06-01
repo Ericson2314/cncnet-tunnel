@@ -229,7 +229,7 @@ final class TunnelController private (
           val url: URL = new URL(
             master.get + "?"
               + "name=" + URLEncoder.encode(name, "US-ASCII")
-              + "&password=" + (if (password.isDefined) "0" else "1")
+              + "&password=" + (if (password.isDefined) "1" else "0")
               + "&port=" + port
               + "&clients=" + routers.size
               + "&maxclients=" + maxClients

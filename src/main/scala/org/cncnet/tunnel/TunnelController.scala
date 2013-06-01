@@ -53,7 +53,7 @@ final class TunnelController private (
   private val password: Option[String],
   private val maxClients: Int,
   private val port: Int,
-  private val master: String,
+  private val master: Option[String],
   private val masterPW: Option[String]
 
 ) extends HttpHandler with Runnable {
@@ -65,7 +65,7 @@ final class TunnelController private (
     password: Option[String],
     port: Int,
     maxclients: Int,
-    master: String,
+    master: Option[String],
     masterpw: Option[String]
   ) = this(
     logger,
@@ -194,27 +194,29 @@ final class TunnelController private (
         os.close()
     }
   }
-  
+
+  val HEARTBEAT_PERIOD = 60000
+
   def run() {
     var lastHeartbeat: Long = 0
 
     logger.status("Connecting...")
 
     logger.log("TunnelController started.")
-    
+
     var connected: Boolean = false
 
     while (true) {
 
       val now: Long = System.currentTimeMillis()
 
-      if (lastHeartbeat + 60000 < now && master != null) {
+      if (lastHeartbeat + HEARTBEAT_PERIOD < now && master.isDefined) {
         logger.log("Sending a heartbeat to master server.")
 
         connected = false
         try {
           val url: URL = new URL(
-            master + "?"
+            master.get + "?"
               + "name=" + URLEncoder.encode(name, "US-ASCII")
               + "&password=" + (if (password.isDefined) "0" else "1")
               + "&port=" + port
@@ -223,8 +225,7 @@ final class TunnelController private (
               + (masterPW match {
                 case Some(pw) => "&masterpw=" + URLEncoder.encode(pw, "US-ASCII")
                 case None => ""
-              })
-          )
+              }))
           val con: HttpURLConnection = url.openConnection() match {
             case c: HttpURLConnection => c
             case _ => throw new ClassCastException()
@@ -252,7 +253,7 @@ final class TunnelController private (
         val e: Map.Entry[DatagramChannel, Router] = setIterator.next()
         val router: Router = e.getValue()
 
-        if (router.getLastPacket() + 60000 < now) {
+        if (router.getLastPacket() + HEARTBEAT_PERIOD < now) {
           val channel: DatagramChannel = e.getKey()
           logger.log("Port " + channel.socket().getLocalPort() + " timed out from router " + router.hashCode() + ".")
           pool.add(channel)

@@ -9,14 +9,8 @@ import java.nio.ByteBuffer
 import java.nio.channels.DatagramChannel
 import java.nio.channels.SelectionKey
 import java.nio.channels.Selector
-import java.util.ArrayList
-import java.util.Date
-import java.util.Iterator
-import java.util.List
 import javax.swing.JFrame
 import javax.swing.UIManager;
-
-import scala.collection.JavaConverters._
 
 class Conf(arguments: Seq[String]) extends ScallopConf(arguments) {
   val name       = opt[String ](descr = "Custom name for the tunnel",                              required = false, default = Some("Unnamed CnCNet 5 tunnel"))
@@ -92,25 +86,23 @@ object Main {
 
     try {
       val selector: Selector = Selector.open();
-      val channels = new ArrayList[DatagramChannel]();
 
       def createChannel (portNum: Int): DatagramChannel = {
         val channel: DatagramChannel = DatagramChannel.open()
         channel.configureBlocking(false)
         channel.socket().bind(new InetSocketAddress(portNum))
         channel.register(selector, SelectionKey.OP_READ)
-        channels.add(channel)
         channel
       }
 
       val controller = new TunnelController(
         logger,
-        Array.range(0, conf.maxClients.apply).map(conf.firstPort.apply()+_).map(createChannel).toSeq,
+        Array.range(0, conf.maxClients.apply).map(conf.firstPort.apply()+_).map(createChannel),
         conf.name.apply(),
         conf.password.get,
         conf.firstPort.apply(),
         conf.maxClients.apply(),
-        if (conf.nomaster.apply()) null else conf.master.apply(),
+        if (conf.nomaster.apply()) None else conf.master.get, // later is always defined because of default CnCNet master is hard-coded
         conf.masterPW.get
       );
 
@@ -145,16 +137,19 @@ object Main {
                 case chan: InetSocketAddress => chan
                 case _                       => throw new ClassCastException
               }
-              
+
               val router: Router = controller.getRouter(chan);
-              val res: RouteResult = if (router == null) null else router.route(from, chan, now);
-              if (res == null) {
-                //Main.logger.log("Ignoring packet from " + from + " (routing failed), was " + buf.position() + " bytes");
-              } else {
-                //Main.logger.log("Packet from " + from + " routed to " + res.getDestination() + ", was " + buf.position() + " bytes");
-                val len: Int = buf.position();
-                buf.flip();
-                res.channel.send(buf, res.destination);
+
+              router.route(from, chan, now) match {
+                case Some(res) => {
+                  //Main.logger.log("Packet from " + from + " routed to " + res.getDestination() + ", was " + buf.position() + " bytes");
+                  val len: Int = buf.position();
+                  buf.flip();
+                  res.channel.send(buf, res.destination);
+                }
+                case None => {
+                  //Main.logger.log("Ignoring packet from " + from + " (routing failed), was " + buf.position() + " bytes");
+                }
               }
             } catch {
               case e: IOException => logger.log("IOException when handling event: " + e.getMessage());

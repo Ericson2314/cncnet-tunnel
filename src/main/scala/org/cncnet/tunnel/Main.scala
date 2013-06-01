@@ -42,10 +42,11 @@ object Main {
   def main(args: Array[String]) {
     val conf = new Conf(args)
     val logger = Logger(conf.logfile.get, if (conf.headless.apply()) None else {
-      val statusWindow = new StatusWindow();
-      statusWindow.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+      val statusWindow = new StatusWindow() {
+        override def closeOperation() { System exit 0 } // exit on close
+      }
       statusWindow.status("Initializing...");
-      statusWindow.setVisible(true);
+      statusWindow.visible_=(true);
       Some(statusWindow)
     })
 

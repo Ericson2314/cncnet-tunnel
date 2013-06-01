@@ -15,7 +15,7 @@ import scala.collection.JavaConversions._
  * @author Toni Spets <toni.spets@iki.fi>
  */
 object Router {
-  def apply(ipMap: HashMap[InetAddress, DatagramChannel]): Router = {
+  def apply(ipMap: Map[InetAddress, DatagramChannel]): Router = {
     val portMap = new HashMap[DatagramChannel, Port]()
 
     for (entry: Map.Entry[InetAddress, DatagramChannel] <- ipMap.entrySet()) {

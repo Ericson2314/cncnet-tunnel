@@ -2,7 +2,6 @@ package org.cncnet.tunnel
 
 import java.net.InetAddress
 import java.nio.channels.DatagramChannel
-import java.util.List
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable.Map
@@ -18,7 +17,7 @@ object Port {
     new Port(ip, outMap)
   }
   
-  def apply(ip: InetAddress, chanList: java.util.Collection[DatagramChannel]): Port = apply(ip, chanList.asScala)
+  def apply(ip: InetAddress, chanList: java.util.Collection[DatagramChannel]): Port = apply(ip, chanList)
 }
 
 class Port private (

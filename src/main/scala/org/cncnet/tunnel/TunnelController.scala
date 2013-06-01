@@ -27,20 +27,15 @@ import java.net.URL
 import java.net.URLDecoder
 import java.net.URLEncoder
 import java.nio.channels.DatagramChannel
-import java.util.ArrayList
-import java.util.HashMap
 import java.util.Iterator
-import java.util.List
-import java.util.Map
-import java.util.Map.Entry
-import java.util.NoSuchElementException
-import java.util.Set
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.ConcurrentHashMap
 
 import scala.collection.JavaConversions._
 import scala.Option._
+import scala.collection.mutable.HashMap
+import scala.collection.mutable.Map
 
 final class TunnelController private (
   private val logger: Logger,
@@ -91,11 +86,31 @@ final class TunnelController private (
       val query = t.getRequestURI().getQuery()
       if (query == null) new Array[String](0) else query.split("&") // this is implicitly returned
     }
-
-    val addresses: List[InetAddress] = new ArrayList[InetAddress]()
     val requestAddress: String = t.getRemoteAddress().getAddress().getHostAddress()
+    
+    var pwOk: Boolean = !password.isDefined;
 
-    if (!password.isDefined) {
+    val addresses: List[InetAddress] = params.foldLeft[List[InetAddress]](Nil)((addresses, param: String) => {
+      val kv: Array[String] = param.split("=");
+      if (kv.length == 2) {
+
+        kv(0) = URLDecoder.decode(kv(0), "UTF-8");
+        kv(1) = URLDecoder.decode(kv(1), "UTF-8");
+
+        if (kv(0).equals("password") && password.isDefined && kv(1).equals(password)) {
+          pwOk = true;
+        }
+
+        if (kv(0) == "ip[]") {
+          val newAddress: InetAddress = InetAddress.getByName(kv(1));
+          if (newAddress != null) {
+            addresses.::(newAddress)
+          } else addresses
+        } else addresses
+      } else addresses
+    })
+    
+    if (!pwOk) {
       // Unauthorized
       logger.log("Request was unauthorized.")
       t.sendResponseHeaders(401, 0)
@@ -103,7 +118,7 @@ final class TunnelController private (
       return
     }
 
-    if (addresses.size() < 2 || addresses.size() > 8) {
+    if (addresses.size < 2 || addresses.size > 8) {
       // Bad Request
       logger.log("Request had invalid amount of addresses.")
       t.sendResponseHeaders(400, 0)
@@ -141,16 +156,12 @@ final class TunnelController private (
     }
 
     val router: Router = Router(clients)
-    router.attachment_=(requestAddress)
+    router.attachment = requestAddress
 
     // lock the request ip out until this router is collected
     locks.put(t.getRemoteAddress().getAddress().getHostAddress(), router)
 
-    val entries: Set[Entry[InetAddress, DatagramChannel]] = clients.entrySet()
-
-    for (entry: Entry[InetAddress, DatagramChannel] <- entries) {
-      val channel: DatagramChannel = entry.getValue()
-      val address: InetAddress = entry.getKey()
+    for (( address: InetAddress, channel: DatagramChannel)  <- clients) {
       logger.log("Port " + channel.socket().getLocalPort() + " allocated for " + address.toString() + " in router " + router.hashCode() + ".")
       routers.put(channel, router)
     }
@@ -162,7 +173,7 @@ final class TunnelController private (
   }
 
   private def handleStatus(t: HttpExchange) {
-    val response: String = pool.size() + " slots free.\n" + routers.size() + " slots in use.\n"
+    val response: String = pool.size() + " slots free.\n" + routers.size + " slots in use.\n"
     logger.log("Response: " + response)
     t.sendResponseHeaders(200, response.length())
     val os: OutputStream = t.getResponseBody()
@@ -220,7 +231,7 @@ final class TunnelController private (
               + "name=" + URLEncoder.encode(name, "US-ASCII")
               + "&password=" + (if (password.isDefined) "0" else "1")
               + "&port=" + port
-              + "&clients=" + routers.size()
+              + "&clients=" + routers.size
               + "&maxclients=" + maxClients
               + (masterPW match {
                 case Some(pw) => "&masterpw=" + URLEncoder.encode(pw, "US-ASCII")
@@ -245,29 +256,20 @@ final class TunnelController private (
 
         lastHeartbeat = now
       }
-
-      val set: Set[Map.Entry[DatagramChannel, Router]] = routers.entrySet()
-
-      val setIterator = set.iterator()
-      while (setIterator.hasNext()) {
-        val e: Map.Entry[DatagramChannel, Router] = setIterator.next()
-        val router: Router = e.getValue()
+      
+      for ((channel, router) <- routers) {
 
         if (router.getLastPacket() + HEARTBEAT_PERIOD < now) {
-          val channel: DatagramChannel = e.getKey()
           logger.log("Port " + channel.socket().getLocalPort() + " timed out from router " + router.hashCode() + ".")
           pool.add(channel)
-          setIterator.remove()
 
-          if (locks.containsKey(router.attachment)) {
-            locks.remove(router.attachment)
-          }
+          if (locks.containsKey(router.attachment)) locks.removeKey(router.attachment.toString)
         }
       }
 
       logger.status (
         (if (connected) "Connected. " else "Disconnected from master. ") +
-        routers.size() + " / " + maxClients + " players online."
+        routers.size + " / " + maxClients + " players online."
       )
 
       try {

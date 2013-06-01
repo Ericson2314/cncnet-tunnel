@@ -138,19 +138,19 @@ object Main {
                 case _                       => throw new ClassCastException
               }
 
-              val router: Router = controller.getRouter(chan);
-
-              router.route(from, chan, now) match {
-                case Some(res) => {
-                  //Main.logger.log("Packet from " + from + " routed to " + res.getDestination() + ", was " + buf.position() + " bytes");
-                  val len: Int = buf.position();
-                  buf.flip();
-                  res.channel.send(buf, res.destination);
+              controller.getRouter(chan) match {
+                case Some(router) => router.route(from, chan, now) match {
+                  case Some(res) => {
+                    //Main.logger.log("Packet from " + from + " routed to " + res.getDestination() + ", was " + buf.position() + " bytes");
+                    val len: Int = buf.position();
+                    buf.flip();
+                    res.channel.send(buf, res.destination);
+                  }
+                  case None => () //Main.logger.log("Ignoring packet from " + from + " (routing failed), was " + buf.position() + " bytes");
                 }
-                case None => {
-                  //Main.logger.log("Ignoring packet from " + from + " (routing failed), was " + buf.position() + " bytes");
-                }
+                case None => () //Main.logger.log("Ignoring packet from " + from + " (routing failed), was " + buf.position() + " bytes");
               }
+              
             } catch {
               case e: IOException => logger.log("IOException when handling event: " + e.getMessage());
             }

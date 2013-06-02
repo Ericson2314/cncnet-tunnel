@@ -139,6 +139,8 @@ object Main {
                 case _                       => throw new ClassCastException
               }
 
+              def logBadPacket(from: InetSocketAddress, buf: ByteBuffer) = logger.log("Ignoring packet from " + from + " (routing failed), was " + buf.position() + " bytes");
+
               controller.getRouter(chan) match {
                 case Some(router) => router.route(from, chan, now) match {
                   case Some((destination: DatagramChannel, channel: InetSocketAddress)) => {
@@ -147,11 +149,11 @@ object Main {
                     buf.flip();
                     channel.send(buf, destination);
                   }
-                  case None => () //Main.logger.log("Ignoring packet from " + from + " (routing failed), was " + buf.position() + " bytes");
+                  case None => () //logBadPacket(from, buf)
                 }
-                case None => () //Main.logger.log("Ignoring packet from " + from + " (routing failed), was " + buf.position() + " bytes");
+                case None => () //logBadPacket(from, buf)
               }
-              
+
             } catch {
               case e: IOException => logger.log("IOException when handling event: " + e.getMessage());
             }

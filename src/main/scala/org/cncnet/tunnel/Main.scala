@@ -60,6 +60,7 @@ object Main {
   }
 
   def start(conf: Conf, logger: Logger, name: Option[String], maxclients: Int, password: Option[String], nomaster: Boolean) {
+    //conf.
     start(conf, logger)
   }
   
@@ -140,11 +141,11 @@ object Main {
 
               controller.getRouter(chan) match {
                 case Some(router) => router.route(from, chan, now) match {
-                  case Some(res) => {
+                  case Some((destination: DatagramChannel, channel: InetSocketAddress)) => {
                     //Main.logger.log("Packet from " + from + " routed to " + res.getDestination() + ", was " + buf.position() + " bytes");
                     val len: Int = buf.position();
                     buf.flip();
-                    res.channel.send(buf, res.destination);
+                    channel.send(buf, destination);
                   }
                   case None => () //Main.logger.log("Ignoring packet from " + from + " (routing failed), was " + buf.position() + " bytes");
                 }

@@ -32,11 +32,6 @@ class Port private (
   def setRoute(channel: DatagramChannel, remotePort: Int): Unit = outMap.put(channel, remotePort)
 }
 
-class RouteResult(
-    val destination: InetSocketAddress,
-    val channel: DatagramChannel    
-)
-
 object Router {
   def apply(ipMap: Map[InetAddress, DatagramChannel]): Router = {
     val portMap = new HashMap[DatagramChannel, Port]()
@@ -58,14 +53,14 @@ class Router private (
 
   def getLastPacket(): Long = lastPacket
 
-  def route(source: InetSocketAddress, channel: DatagramChannel): Option[RouteResult] =
+  def route(source: InetSocketAddress, channel: DatagramChannel): Option[(InetSocketAddress,DatagramChannel)] =
     route(source, channel, System.currentTimeMillis())
 
   def route(
     source: InetSocketAddress,
     channel: DatagramChannel,
     now: Long
-  ): Option[RouteResult] = (portMap.get(channel), ipMap.get(source.getAddress())) match {
+  ): Option[(InetSocketAddress, DatagramChannel)] = (portMap.get(channel), ipMap.get(source.getAddress())) match {
     case (Some(inPort), Some(outChannel)) => {
 
       portMap.get(outChannel) match {
@@ -76,7 +71,7 @@ class Router private (
       val dstIp: InetAddress = inPort.ip
 
       inPort.getRoute(outChannel) match {
-        case Some(dstPort) => { lastPacket = now; Some(new RouteResult(new InetSocketAddress(dstIp, dstPort), outChannel)) }
+        case Some(dstPort) => { lastPacket = now; Some(new InetSocketAddress(dstIp, dstPort), outChannel) }
         case None => None // error
       }
     }

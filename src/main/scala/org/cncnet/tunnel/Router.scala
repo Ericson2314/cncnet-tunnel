@@ -12,6 +12,31 @@ import scala.collection.mutable.Map
  *
  * @author Toni Spets <toni.spets@iki.fi>
  */
+object Port {
+  def apply(ip: InetAddress, chanList: Collection[DatagramChannel]): Port = {
+    val outMap = new HashMap[DatagramChannel, Int]()
+    for (channel: DatagramChannel <- chanList) {
+      outMap.put(channel, 0)
+    }
+    new Port(ip, outMap)
+  }
+  
+  def apply(ip: InetAddress, chanList: java.util.Collection[DatagramChannel]): Port = apply(ip, chanList)
+}
+
+class Port private (
+  val ip: InetAddress,
+  protected val outMap: Map[DatagramChannel, Int] // outMap protected to hide entry removal
+) {
+  def getRoute(channel: DatagramChannel): Option[Int] = outMap.get(channel)
+  def setRoute(channel: DatagramChannel, remotePort: Int): Unit = outMap.put(channel, remotePort)
+}
+
+class RouteResult(
+    val destination: InetSocketAddress,
+    val channel: DatagramChannel    
+)
+
 object Router {
   def apply(ipMap: Map[InetAddress, DatagramChannel]): Router = {
     val portMap = new HashMap[DatagramChannel, Port]()

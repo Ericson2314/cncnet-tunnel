@@ -77,7 +77,7 @@ final class TunnelController private (
     masterpw)
 
   // will get called by another thread
-  def getRouter(channel: DatagramChannel) = routers.get(channel)
+  def getRouter(channel: DatagramChannel): Option[Router] = routers.get(channel)
 
   private def handleRequest(t: HttpExchange) {
     val clients: Map[InetAddress, DatagramChannel] = new HashMap[InetAddress, DatagramChannel]()

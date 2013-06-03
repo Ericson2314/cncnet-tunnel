@@ -91,7 +91,7 @@ object Main {
       def createChannel (portNum: Int): DatagramChannel = {
         val channel: DatagramChannel = DatagramChannel.open()
         channel.configureBlocking(false)
-        channel.socket().bind(new InetSocketAddress(portNum))
+        channel.socket().bind(new InetSocketAddress(portNum)) // tunnel port
         channel.register(selector, SelectionKey.OP_READ)
         channel
       }
@@ -135,7 +135,7 @@ object Main {
               buf.clear();
 
               val from = chan.receive(buf) match {
-                case chan: InetSocketAddress => chan
+                case from: InetSocketAddress => from
                 case _                       => throw new ClassCastException
               }
 

@@ -1,3 +1,5 @@
+organization := "org.cncnet"
+
 name := "CnCNet Tunnel"
 
 version := "1.0"

@@ -96,8 +96,11 @@ object Main {
         channel
       }
 
+      val dispatcher = new Dispatcher(selector)
+
       val controller = new TunnelController(
         logger,
+        dispatcher,
         Array.range(0, conf.maxClients.apply).map(conf.firstPort.apply()+_).map(createChannel),
         conf.name.apply(),
         conf.password.get,
@@ -114,9 +117,9 @@ object Main {
       server.setExecutor(null);
       server.start();
 
-      new Thread(controller).start();
+      dispatcher.run()
 
-      new Dispatcher(selector, controller).run()
+      new Thread(controller).start()
 
     } catch {
       case e => logger.log(e.toString());

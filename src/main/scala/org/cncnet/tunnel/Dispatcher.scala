@@ -6,11 +6,23 @@ import java.nio.channels.Selector
 import java.nio.ByteBuffer
 import java.net.InetSocketAddress
 import java.io.IOException
+import java.util.concurrent.BlockingQueue
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ArrayBlockingQueue
 
-class Dispatcher(
-  selector: Selector,
-  controller: TunnelController
-) extends Runnable {
+import scala.collection.mutable.Map
+import scala.collection.JavaConversions._
+
+class Dispatcher(selector: Selector) extends Runnable {
+
+  private val routers: Map[DatagramChannel, Router] = new ConcurrentHashMap[DatagramChannel, Router]()
+
+  private def requestRoute(source: InetSocketAddress, destination: DatagramChannel, now: Long): Option[(InetSocketAddress, DatagramChannel)] = {
+    routers.get(destination) match {
+      case Some(router) => router.route(source, destination, now)
+      case None => None
+    }
+  }
 
   override def run() {
     val buf: ByteBuffer = ByteBuffer.allocate(4096);
@@ -36,7 +48,7 @@ class Dispatcher(
               case _ => throw new ClassCastException
             }
 
-            controller.requestRoute(source, destination, now) match {
+            requestRoute(source, destination, now) match {
               case Some((destination: InetSocketAddress, channel: DatagramChannel)) => {
                 //Main.logger.log("Packet from " + from + " routed to " + res.getDestination() + ", was " + buf.position() + " bytes");
                 val len: Int = buf.position();
@@ -58,4 +70,10 @@ class Dispatcher(
       }
     }
   }
+
+  // for TunnelController
+
+  def numRouters = routers.size
+  def routerKVs = routers.iterator
+  def addRouter(k: DatagramChannel, v: Router): Unit = routers.put(k, v)
 }

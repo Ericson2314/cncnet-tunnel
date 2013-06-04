@@ -39,10 +39,9 @@ import java.net.InetSocketAddress
 
 final class TunnelController private (
   private val logger: Logger,
+  private val dispatcher: Dispatcher,
 
   private val pool: BlockingQueue[DatagramChannel],
-  private val routers: Map[DatagramChannel, Router],
-  private val locks: Map[String, Router],
 
   private val name: String,
   private val password: Option[String],
@@ -50,11 +49,11 @@ final class TunnelController private (
   private val port: Int,
   private val master: Option[String],
   private val masterPW: Option[String]
-
 ) extends HttpHandler with Runnable {
 
   def this(
     logger: Logger,
+    dispatcher: Dispatcher,
     channels: Collection[DatagramChannel],
     name: String,
     password: Option[String],
@@ -64,10 +63,9 @@ final class TunnelController private (
     masterpw: Option[String]
   ) = this(
     logger,
+    dispatcher,
 
     new ArrayBlockingQueue[DatagramChannel](channels.size, true, channels),
-    new ConcurrentHashMap[DatagramChannel, Router](),
-    new ConcurrentHashMap[String, Router](),
 
     name,
     password,
@@ -77,12 +75,8 @@ final class TunnelController private (
     masterpw)
 
   // will get called by another thread
-  def requestRoute(source: InetSocketAddress, destination: DatagramChannel, now: Long): Option[(InetSocketAddress, DatagramChannel)] = {
-    routers.get(destination) match {
-      case Some(router) => router.route(source, destination, now)
-      case None => None
-    }
-  }
+
+  private val locks: Map[String, Router] = new ConcurrentHashMap[String, Router]()
 
   private def handleRequest(t: HttpExchange) {
     val clients: Map[InetAddress, DatagramChannel] = new HashMap[InetAddress, DatagramChannel]()
@@ -92,7 +86,7 @@ final class TunnelController private (
       if (query == null) new Array[String](0) else query.split("&") // this is implicitly returned
     }
     val requestAddress: String = t.getRemoteAddress().getAddress().getHostAddress()
-    
+
     var pwOk: Boolean = !password.isDefined;
 
     val addresses: List[InetAddress] = params.foldLeft[List[InetAddress]](Nil)((addresses, param: String) => {
@@ -114,7 +108,7 @@ final class TunnelController private (
         } else addresses
       } else addresses
     })
-    
+
     if (!pwOk) {
       // Unauthorized
       logger.log("Request was unauthorized.")
@@ -166,9 +160,9 @@ final class TunnelController private (
     // lock the request ip out until this router is collected
     locks.put(t.getRemoteAddress().getAddress().getHostAddress(), router)
 
-    for (( address: InetAddress, channel: DatagramChannel)  <- clients) {
+    for ((address: InetAddress, channel: DatagramChannel) <- clients) {
       logger.log("Port " + channel.socket().getLocalPort() + " allocated for " + address.toString() + " in router " + router.hashCode() + ".")
-      routers.put(channel, router)
+      dispatcher.addRouter(channel, router)
     }
 
     respondHelper(200, ret, t)
@@ -182,7 +176,7 @@ final class TunnelController private (
   }
 
   private def handleStatus(t: HttpExchange) {
-    val response: String = pool.size() + " slots free.\n" + routers.size + " slots in use.\n"
+    val response: String = pool.size() + " slots free.\n" + dispatcher.numRouters + " slots in use.\n"
     logger.log("Response: " + response)
     respondHelper(200, response, t)
   }
@@ -234,7 +228,7 @@ final class TunnelController private (
               + "name=" + URLEncoder.encode(name, "US-ASCII")
               + "&password=" + (if (password.isDefined) "1" else "0")
               + "&port=" + port
-              + "&clients=" + routers.size
+              + "&clients=" + dispatcher.numRouters
               + "&maxclients=" + maxClients
               + (masterPW match {
                 case Some(pw) => "&masterpw=" + URLEncoder.encode(pw, "US-ASCII")
@@ -259,8 +253,8 @@ final class TunnelController private (
 
         lastHeartbeat = now
       }
-      
-      for ((channel, router) <- routers) {
+
+      for ((channel, router) <- dispatcher.routerKVs) {
 
         if (router.getLastPacket() + HEARTBEAT_PERIOD < now) {
           logger.log("Port " + channel.socket().getLocalPort() + " timed out from router " + router.hashCode() + ".")
@@ -270,10 +264,9 @@ final class TunnelController private (
         }
       }
 
-      logger.status (
+      logger.status(
         (if (connected) "Connected. " else "Disconnected from master. ") +
-        routers.size + " / " + maxClients + " players online."
-      )
+          dispatcher.numRouters + " / " + maxClients + " players online.")
 
       try {
         Thread.sleep(5000)

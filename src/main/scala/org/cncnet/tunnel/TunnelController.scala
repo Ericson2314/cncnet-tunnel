@@ -158,7 +158,6 @@ final class TunnelController private (
     }
 
     val router: Router = Router(clients)
-    router.attachment = requestAddress
 
     // lock the request ip out until this router is collected
     locks.add(requestAddress)

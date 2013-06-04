@@ -49,7 +49,6 @@ class Router private (
   val ipMap: Map[InetAddress, DatagramChannel]
 ) {
   private var lastPacket: Long = System.currentTimeMillis()
-  var attachment: Object = null
 
   def getLastPacket(): Long = lastPacket
 

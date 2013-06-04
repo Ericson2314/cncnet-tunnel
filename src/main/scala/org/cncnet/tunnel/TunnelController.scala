@@ -171,19 +171,20 @@ final class TunnelController private (
       routers.put(channel, router)
     }
 
-    t.sendResponseHeaders(200, ret.length())
+    respondHelper(200, ret, t)
+  }
+
+  private def respondHelper(responseCode: Int, response: CharSequence, t: HttpExchange) {
+    t.sendResponseHeaders(responseCode, response.length())
     val os: OutputStream = t.getResponseBody()
-    os.write(ret.toString().getBytes())
+    os.write(response.toString.getBytes())
     os.close()
   }
 
   private def handleStatus(t: HttpExchange) {
     val response: String = pool.size() + " slots free.\n" + routers.size + " slots in use.\n"
     logger.log("Response: " + response)
-    t.sendResponseHeaders(200, response.length())
-    val os: OutputStream = t.getResponseBody()
-    os.write(response.getBytes())
-    os.close()
+    respondHelper(200, response, t)
   }
 
   def handle(t: HttpExchange) {
@@ -204,10 +205,7 @@ final class TunnelController private (
       case e: IOException =>
         logger.log("Error: " + e.getMessage())
         val error: String = e.getMessage()
-        t.sendResponseHeaders(500, error.length())
-        val os: OutputStream = t.getResponseBody()
-        os.write(error.getBytes())
-        os.close()
+        respondHelper(500, error, t)
     }
   }
 

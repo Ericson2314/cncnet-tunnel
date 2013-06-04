@@ -90,21 +90,21 @@ final class TunnelController private (
     }
     val requestAddress: InetAddress = t.getRemoteAddress().getAddress()
 
-    var pwOk: Boolean = !password.isDefined;
+    var pwOk: Boolean = !password.isDefined
 
     val addresses: List[InetAddress] = params.foldLeft[List[InetAddress]](Nil)((addresses, param: String) => {
-      val kv: Array[String] = param.split("=");
+      val kv: Array[String] = param.split("=")
       if (kv.length == 2) {
 
-        kv(0) = URLDecoder.decode(kv(0), "UTF-8");
-        kv(1) = URLDecoder.decode(kv(1), "UTF-8");
+        kv(0) = URLDecoder.decode(kv(0), "UTF-8")
+        kv(1) = URLDecoder.decode(kv(1), "UTF-8")
 
         if (kv(0).equals("password") && password.isDefined && kv(1).equals(password)) {
-          pwOk = true;
+          pwOk = true
         }
 
         if (kv(0) == "ip[]") {
-          val newAddress: InetAddress = InetAddress.getByName(kv(1));
+          val newAddress: InetAddress = InetAddress.getByName(kv(1))
           if (newAddress != null) {
             addresses.::(newAddress)
           } else addresses

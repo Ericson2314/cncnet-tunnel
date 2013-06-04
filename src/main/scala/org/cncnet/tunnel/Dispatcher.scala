@@ -29,12 +29,12 @@ class Dispatcher(logger: Logger, selector: Selector) extends Runnable {
   }
 
   def actualRun() {
-    val buf: ByteBuffer = ByteBuffer.allocate(4096);
+    val buf: ByteBuffer = ByteBuffer.allocate(4096)
 
     while (true) {
       if (selector.select() > 0) {
-        val now: Long = System.currentTimeMillis();
-        val keyIterator = selector.selectedKeys().iterator();
+        val now: Long = System.currentTimeMillis()
+        val keyIterator = selector.selectedKeys().iterator()
 
         while (keyIterator.hasNext()) {
           val key: SelectionKey = keyIterator.next()
@@ -45,7 +45,7 @@ class Dispatcher(logger: Logger, selector: Selector) extends Runnable {
           }
 
           try {
-            buf.clear();
+            buf.clear()
 
             val source = destination.receive(buf) match {
               case source: InetSocketAddress => source
@@ -54,22 +54,22 @@ class Dispatcher(logger: Logger, selector: Selector) extends Runnable {
 
             requestRoute(source, destination, now) match {
               case Some((destination: InetSocketAddress, channel: DatagramChannel)) => {
-                //Main.logger.log("Packet from " + from + " routed to " + res.getDestination() + ", was " + buf.position() + " bytes");
-                val len: Int = buf.position();
-                buf.flip();
-                channel.send(buf, destination);
+                //Main.logger.log("Packet from " + from + " routed to " + res.getDestination() + ", was " + buf.position() + " bytes")
+                val len: Int = buf.position()
+                buf.flip()
+                channel.send(buf, destination)
               }
               case None => () //logger.log("Ignoring packet from " + from + " (routing failed), was " + buf.position() + " bytes")
             }
           } catch {
-            case e: IOException => logger.log("IOException when handling event: " + e.getLocalizedMessage());
+            case e: IOException => logger.log("IOException when handling event: " + e.getLocalizedMessage())
           }
 
           if (!key.channel().isOpen()) {
-            key.cancel();
+            key.cancel()
           }
 
-          keyIterator.remove();
+          keyIterator.remove()
         }
       }
     }

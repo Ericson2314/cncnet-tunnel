@@ -37,7 +37,7 @@ object Router {
     val portMap = new HashMap[DatagramChannel, Port]()
 
     for ((address: InetAddress, channel: DatagramChannel) <- ipMap) {
-      portMap.put(channel, Port.apply(address, ipMap.values));
+      portMap.put(channel, Port.apply(address, ipMap.values))
     }
 
     new Router(portMap, ipMap)
@@ -64,7 +64,7 @@ class Router private (
     case (Some(inPort), Some(outChannel)) => {
 
       portMap.get(outChannel) match {
-        case Some(outPort) => outPort.setRoute(destChannel, source.getPort());
+        case Some(outPort) => outPort.setRoute(destChannel, source.getPort())
         case None => return None // error
       }
 

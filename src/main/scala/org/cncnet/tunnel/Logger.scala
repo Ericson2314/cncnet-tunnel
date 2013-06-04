@@ -3,7 +3,7 @@ package org.cncnet.tunnel
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
-import java.util.Date;
+import java.util.Date
 
 object Logger {
   def apply(file: Option[String], sw: Option[StatusWindow]): Logger = try {
@@ -41,8 +41,8 @@ class Logger (
 
   private def appendToFile(line: String) {
     try {
-      logStream.get.write(line.getBytes());
-      logStream.get.write('\n');
+      logStream.get.write(line.getBytes())
+      logStream.get.write('\n')
     } catch {
       case e: IOException => () // silently ignore errors
     }

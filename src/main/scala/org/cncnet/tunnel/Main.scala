@@ -11,7 +11,7 @@ import java.nio.channels.DatagramChannel
 import java.nio.channels.SelectionKey
 import java.nio.channels.Selector
 import javax.swing.JFrame
-import javax.swing.UIManager;
+import javax.swing.UIManager
 
 class Conf(arguments: Seq[String]) extends ScallopConf(arguments) {
   val name       = opt[String ](descr = "Custom name for the tunnel",                              required = false, default = Some("Unnamed CnCNet 5 tunnel"))
@@ -27,7 +27,7 @@ class Conf(arguments: Seq[String]) extends ScallopConf(arguments) {
   val headless   = opt[Boolean](descr = "Do not start the GUI",                                    required = false) // default for Boolean is implicit
   
   // for java
-  def getMaxClients(): Int = maxClients.apply;
+  def getMaxClients(): Int = maxClients.apply
 }
 
 object Main {
@@ -40,8 +40,8 @@ object Main {
       val statusWindow = new StatusWindow() {
         override def closeOperation() { System exit 0 } // exit on close
       }
-      statusWindow.status("Initializing...");
-      statusWindow.visible_=(true);
+      statusWindow.status("Initializing...")
+      statusWindow.visible_=(true)
       Some(statusWindow)
     })
 
@@ -56,7 +56,7 @@ object Main {
       configurationWindow.setVisible(true)
       configurationWindow.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE)
     } else {
-      start(conf, logger);
+      start(conf, logger)
     }
   }
 
@@ -94,14 +94,14 @@ object Main {
     logger: Logger
   ) {
 
-    logger.log("CnCNet tunnel starting...");
-    logger.log("Name       : " + name);
-    logger.log("Max clients: " + maxClients);
+    logger.log("CnCNet tunnel starting...")
+    logger.log("Name       : " + name)
+    logger.log("Max clients: " + maxClients)
     logger.log(password match {
       case Some(pw) => "Password   : " + pw
       case None     => "***No Password***"
     })
-    logger.log("Ports      : " + firstPort + " - " + (firstPort + maxClients - 1) + " (HTTP server on " + firstPort + ")");
+    logger.log("Ports      : " + firstPort + " - " + (firstPort + maxClients - 1) + " (HTTP server on " + firstPort + ")")
     
     logger.log(masterPW match {
       case Some(pw) => "Master pass: " + pw
@@ -117,7 +117,7 @@ object Main {
     })
 
     try {
-      val selector: Selector = Selector.open();
+      val selector: Selector = Selector.open()
 
       def createChannel (portNum: Int): DatagramChannel = {
         val channel: DatagramChannel = DatagramChannel.open()
@@ -138,19 +138,19 @@ object Main {
         firstPort,
         maxClients,
         master,
-        master);
+        master)
 
       // setup our HTTP server
-      val server = HttpServer.create(new InetSocketAddress(firstPort), 4);
-      server.createContext("/request", controller);
-      server.createContext("/status", controller);
-      server.setExecutor(null);
-      server.start();
+      val server = HttpServer.create(new InetSocketAddress(firstPort), 4)
+      server.createContext("/request", controller)
+      server.createContext("/status", controller)
+      server.setExecutor(null)
+      server.start()
 
       new Thread(dispatcher).start()
       new Thread(controller).start()
     } catch {
-      case e => logger.log(e.toString());
+      case e => logger.log(e.toString())
     }
   }
 }

@@ -31,11 +31,15 @@ import java.util.Iterator
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.ConcurrentHashMap
+import java.net.InetSocketAddress
+
 import scala.collection.JavaConversions._
 import scala.Option._
 import scala.collection.mutable.HashMap
+import scala.collection.mutable.HashSet
 import scala.collection.mutable.Map
-import java.net.InetSocketAddress
+import scala.collection.mutable.Set
+import scala.collection.mutable.SynchronizedSet
 
 final class TunnelController private (
   private val logger: Logger,
@@ -72,11 +76,10 @@ final class TunnelController private (
     maxclients,
     port,
     master,
-    masterpw)
+    masterpw
+  )
 
-  // will get called by another thread
-
-  private val locks: Map[String, Router] = new ConcurrentHashMap[String, Router]()
+  private val locks: Set[InetAddress] = new HashSet[InetAddress]() with SynchronizedSet[InetAddress]
 
   private def handleRequest(t: HttpExchange) {
     val clients: Map[InetAddress, DatagramChannel] = new HashMap[InetAddress, DatagramChannel]()
@@ -85,7 +88,7 @@ final class TunnelController private (
       val query = t.getRequestURI().getQuery()
       if (query == null) new Array[String](0) else query.split("&") // this is implicitly returned
     }
-    val requestAddress: String = t.getRemoteAddress().getAddress().getHostAddress()
+    val requestAddress: InetAddress = t.getRemoteAddress().getAddress()
 
     var pwOk: Boolean = !password.isDefined;
 
@@ -126,7 +129,7 @@ final class TunnelController private (
     }
 
     // lock the request ip out until this router is collected
-    if (locks.containsKey(requestAddress)) {
+    if (locks.contains(requestAddress)) {
       // Too Many Requests
       logger.log("Same address tried to request more than one active router.")
       t.sendResponseHeaders(429, 0)
@@ -158,7 +161,7 @@ final class TunnelController private (
     router.attachment = requestAddress
 
     // lock the request ip out until this router is collected
-    locks.put(t.getRemoteAddress().getAddress().getHostAddress(), router)
+    locks.add(requestAddress)
 
     for ((address: InetAddress, channel: DatagramChannel) <- clients) {
       logger.log("Port " + channel.socket().getLocalPort() + " allocated for " + address.toString() + " in router " + router.hashCode() + ".")
@@ -260,7 +263,7 @@ final class TunnelController private (
           logger.log("Port " + channel.socket().getLocalPort() + " timed out from router " + router.hashCode() + ".")
           pool.add(channel)
 
-          if (locks.containsKey(router.attachment)) locks.removeKey(router.attachment.toString)
+          locks.remove(router) // OK if lock is not present in set
         }
       }
 

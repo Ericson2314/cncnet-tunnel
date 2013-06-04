@@ -196,7 +196,7 @@ public class ConfigurationWindow extends javax.swing.JFrame {
     private void startButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_startButtonActionPerformed
         this.setVisible(false);
 
-        final Option<String> name = nameField.getText().length() > 0 ? Option.<String>apply(null) : Option.apply(nameField.getText());
+        final String name = nameField.getText().length() > 0 ? conf.name().apply() : nameField.getText();
 
         final int maxclients = (Integer)maxClients.getValue();
         

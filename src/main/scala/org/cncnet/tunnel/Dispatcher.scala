@@ -13,7 +13,7 @@ import java.util.concurrent.ArrayBlockingQueue
 import scala.collection.mutable.Map
 import scala.collection.JavaConversions._
 
-class Dispatcher(selector: Selector) extends Runnable {
+class Dispatcher(logger: Logger, selector: Selector) extends Runnable {
 
   private val routers: Map[DatagramChannel, Router] = new ConcurrentHashMap[DatagramChannel, Router]()
 
@@ -25,6 +25,10 @@ class Dispatcher(selector: Selector) extends Runnable {
   }
 
   override def run() {
+    try actualRun() catch { case e => logger.log(e.getLocalizedMessage()) }
+  }
+
+  def actualRun() {
     val buf: ByteBuffer = ByteBuffer.allocate(4096);
 
     while (true) {
@@ -37,7 +41,7 @@ class Dispatcher(selector: Selector) extends Runnable {
 
           val destination: DatagramChannel = key.channel() match {
             case chan: DatagramChannel => chan
-            case _ => throw new ClassCastException
+            case _                     => throw new ClassCastException
           }
 
           try {
@@ -45,7 +49,7 @@ class Dispatcher(selector: Selector) extends Runnable {
 
             val source = destination.receive(buf) match {
               case source: InetSocketAddress => source
-              case _ => throw new ClassCastException
+              case _                         => throw new ClassCastException
             }
 
             requestRoute(source, destination, now) match {
@@ -58,7 +62,7 @@ class Dispatcher(selector: Selector) extends Runnable {
               case None => () //logger.log("Ignoring packet from " + from + " (routing failed), was " + buf.position() + " bytes")
             }
           } catch {
-            case e: IOException => new Exception("IOException when handling event: " + e.getMessage());
+            case e: IOException => logger.log("IOException when handling event: " + e.getLocalizedMessage());
           }
 
           if (!key.channel().isOpen()) {

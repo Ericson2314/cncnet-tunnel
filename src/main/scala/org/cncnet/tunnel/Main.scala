@@ -2,6 +2,7 @@ package org.cncnet.tunnel
 
 import org.rogach.scallop._
 import com.sun.net.httpserver.HttpServer
+import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import java.net.InetSocketAddress
@@ -59,28 +60,58 @@ object Main {
     }
   }
 
-  def start(conf: Conf, logger: Logger, name: Option[String], maxclients: Int, password: Option[String], nomaster: Boolean) {
-    //conf.
-    start(conf, logger)
-  }
+  // bootstraps on def below this
+  def start(conf: Conf, logger: Logger): Unit = start(
+    conf,
+    logger,
+    conf.name.apply,
+    conf.maxClients.apply,
+    conf.password.get,
+    conf.nomaster.apply
+  )
+
+  def start(conf: Conf, logger: Logger,
+    name: String, maxclients: Int, password: Option[String], nomaster: Boolean
+  ): Unit = start(
+    name,
+    maxclients,
+    password,
+    conf.firstPort.apply,
+    if (conf.nomaster.apply) None else conf.master.get, // latter is always present because default server is hard-coded
+    conf.masterPW.get,
+    conf.logfile.get.map(s => new File(s)),
+    logger
+  )
   
-  def start(conf: Conf, logger: Logger) {
+  def start(
+    name: String,
+    maxClients: Int,
+    password: Option[String],
+    firstPort: Int,
+    master: Option[String],
+    masterPW: Option[String],
+    logfile: Option[File],
+    logger: Logger
+  ) {
 
     logger.log("CnCNet tunnel starting...");
-    logger.log("Name       : " + conf.name.apply());
-    logger.log("Max clients: " + conf.maxClients.apply());
-    logger.log(conf.password.get match {
+    logger.log("Name       : " + name);
+    logger.log("Max clients: " + maxClients);
+    logger.log(password match {
       case Some(pw) => "Password   : " + pw
       case None     => "***No Password***"
     })
-    logger.log("Ports      : " + conf.firstPort.apply() + " - " + (conf.firstPort.apply() + conf.maxClients.apply() - 1) + " (HTTP server on " + conf.firstPort.apply() + ")");
+    logger.log("Ports      : " + firstPort + " - " + (firstPort + maxClients - 1) + " (HTTP server on " + firstPort + ")");
     
-    logger.log(conf.masterPW.get match {
+    logger.log(masterPW match {
       case Some(pw) => "Master pass: " + pw
       case None     => "***No Master Password***"
     })
-    logger.log(if (conf.nomaster.apply()) "Master server disabled." else "Master     : " + conf.master.apply())
-    logger.log(conf.logfile.get match {
+    logger.log(master match {
+      case Some(mr) => "Master     : " + mr
+      case None     => "***No Master Server***"
+    })
+    logger.log(logfile match {
       case Some(f) => "Logging to:   " + f
       case None    => "***No Log File***"
     })
@@ -96,31 +127,28 @@ object Main {
         channel
       }
 
-      val dispatcher = new Dispatcher(selector)
+      val dispatcher = new Dispatcher(logger, selector)
 
       val controller = new TunnelController(
         logger,
         dispatcher,
-        Array.range(0, conf.maxClients.apply).map(conf.firstPort.apply()+_).map(createChannel),
-        conf.name.apply(),
-        conf.password.get,
-        conf.firstPort.apply(),
-        conf.maxClients.apply(),
-        if (conf.nomaster.apply()) None else conf.master.get, // later is always defined because of default CnCNet master is hard-coded
-        conf.masterPW.get
-      );
+        Array.range(0, maxClients).map(firstPort + _).map(createChannel),
+        name,
+        password,
+        firstPort,
+        maxClients,
+        master,
+        master);
 
       // setup our HTTP server
-      val server = HttpServer.create(new InetSocketAddress(conf.firstPort.apply()), 4);
+      val server = HttpServer.create(new InetSocketAddress(firstPort), 4);
       server.createContext("/request", controller);
       server.createContext("/status", controller);
       server.setExecutor(null);
       server.start();
 
-      dispatcher.run()
-
+      new Thread(dispatcher).start()
       new Thread(controller).start()
-
     } catch {
       case e => logger.log(e.toString());
     }

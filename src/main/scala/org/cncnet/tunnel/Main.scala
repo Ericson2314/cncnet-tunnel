@@ -124,9 +124,9 @@ object Main {
           val keyIterator = selector.selectedKeys().iterator();
           
           while (keyIterator.hasNext()) {
-            val k: SelectionKey = keyIterator.next()
+            val key: SelectionKey = keyIterator.next()
             
-            val chan: DatagramChannel = k.channel() match {
+            val destination: DatagramChannel = key.channel() match {
               case chan: DatagramChannel => chan
               case _                     => throw new ClassCastException
             }
@@ -134,32 +134,26 @@ object Main {
             try {
               buf.clear();
 
-              val from = chan.receive(buf) match {
-                case from: InetSocketAddress => from
-                case _                       => throw new ClassCastException
+              val source = destination.receive(buf) match {
+                case source: InetSocketAddress => source
+                case _                         => throw new ClassCastException
               }
 
-              def logBadPacket(from: InetSocketAddress, buf: ByteBuffer) = logger.log("Ignoring packet from " + from + " (routing failed), was " + buf.position() + " bytes");
-
-              controller.getRouter(chan) match {
-                case Some(router) => router.route(from, chan, now) match {
-                  case Some((destination: DatagramChannel, channel: InetSocketAddress)) => {
-                    //Main.logger.log("Packet from " + from + " routed to " + res.getDestination() + ", was " + buf.position() + " bytes");
-                    val len: Int = buf.position();
-                    buf.flip();
-                    channel.send(buf, destination);
-                  }
-                  case None => () //logBadPacket(from, buf)
+              controller.requestRoute(source, destination, now) match {
+                case Some((destination: InetSocketAddress, channel: DatagramChannel)) => {
+                  //Main.logger.log("Packet from " + from + " routed to " + res.getDestination() + ", was " + buf.position() + " bytes");
+                  val len: Int = buf.position();
+                  buf.flip();
+                  channel.send(buf, destination);
                 }
-                case None => () //logBadPacket(from, buf)
+                case None => () //logger.log("Ignoring packet from " + from + " (routing failed), was " + buf.position() + " bytes")
               }
-
             } catch {
               case e: IOException => logger.log("IOException when handling event: " + e.getMessage());
             }
 
-            if (!k.channel().isOpen()) {
-              k.cancel();
+            if (!key.channel().isOpen()) {
+              key.cancel();
             }
 
             keyIterator.remove();

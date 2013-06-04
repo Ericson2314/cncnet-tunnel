@@ -58,13 +58,13 @@ class Router private (
 
   def route(
     source: InetSocketAddress,
-    channel: DatagramChannel,
+    destChannel: DatagramChannel,
     now: Long
-  ): Option[(InetSocketAddress, DatagramChannel)] = (portMap.get(channel), ipMap.get(source.getAddress())) match {
+  ): Option[(InetSocketAddress, DatagramChannel)] = (portMap.get(destChannel), ipMap.get(source.getAddress())) match {
     case (Some(inPort), Some(outChannel)) => {
 
       portMap.get(outChannel) match {
-        case Some(outPort) => outPort.setRoute(channel, source.getPort());
+        case Some(outPort) => outPort.setRoute(destChannel, source.getPort());
         case None => return None // error
       }
 

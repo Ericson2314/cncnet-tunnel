@@ -31,11 +31,11 @@ import java.util.Iterator
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.ConcurrentHashMap
-
 import scala.collection.JavaConversions._
 import scala.Option._
 import scala.collection.mutable.HashMap
 import scala.collection.mutable.Map
+import java.net.InetSocketAddress
 
 final class TunnelController private (
   private val logger: Logger,
@@ -77,7 +77,12 @@ final class TunnelController private (
     masterpw)
 
   // will get called by another thread
-  def getRouter(channel: DatagramChannel): Option[Router] = routers.get(channel)
+  def requestRoute(source: InetSocketAddress, destination: DatagramChannel, now: Long): Option[(InetSocketAddress, DatagramChannel)] = {
+    routers.get(destination) match {
+      case Some(router) => router.route(source, destination, now)
+      case None => None
+    }
+  }
 
   private def handleRequest(t: HttpExchange) {
     val clients: Map[InetAddress, DatagramChannel] = new HashMap[InetAddress, DatagramChannel]()

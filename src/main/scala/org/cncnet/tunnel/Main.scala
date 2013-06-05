@@ -15,7 +15,7 @@ import javax.swing.UIManager
 
 class Conf(arguments: Seq[String]) extends ScallopConf(arguments) {
   val name       = opt[String ](descr = "Custom name for the tunnel",                              required = false, default = Some("Unnamed CnCNet 5 tunnel"))
-  val maxClients = opt[Int    ](descr = "Maximum number of ports to allocate",                     required = false, default = Some(8), validate = (a => 8 >= a && a >= 2))
+  val maxClients = opt[Int    ](descr = "Maximum number of ports to allocate",                     required = false, default = Some(8), validate = _>=2)
   val password   = opt[String ](descr = "Optional password to send to master when registering",    required = false)
   val firstPort  = opt[Int    ](descr = "Ports are allocated from this up, first doubles as HTTP", required = false, default = Some(50000),
     validate = (a => Main.maxPort - maxClients.apply() >= a && a >= 0)

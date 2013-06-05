@@ -32,19 +32,19 @@ class Port private (
   def setRoute(channel: DatagramChannel, remotePort: Int): Unit = outMap.put(channel, remotePort)
 }
 
-object Router {
-  def apply(ipMap: Map[InetAddress, DatagramChannel]): Router = {
+object Group {
+  def apply(ipMap: Map[InetAddress, DatagramChannel]): Group = {
     val portMap = new HashMap[DatagramChannel, Port]()
 
     for ((address: InetAddress, channel: DatagramChannel) <- ipMap) {
       portMap.put(channel, Port.apply(address, ipMap.values))
     }
 
-    new Router(portMap, ipMap)
+    new Group(portMap, ipMap)
   }
 }
 
-class Router private (
+class Group private (
   val portMap: Map[DatagramChannel, Port],
   val ipMap: Map[InetAddress, DatagramChannel]
 ) {

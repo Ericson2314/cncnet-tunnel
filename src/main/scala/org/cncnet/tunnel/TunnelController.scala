@@ -157,7 +157,7 @@ final class TunnelController private (
       }
     }
 
-    val router: Router = Router(clients)
+    val router: Group = Group(clients)
 
     // lock the request ip out until this router is collected
     locks.add(requestAddress)

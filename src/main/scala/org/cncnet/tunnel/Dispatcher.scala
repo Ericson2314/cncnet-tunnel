@@ -15,7 +15,7 @@ import scala.collection.JavaConversions._
 
 class Dispatcher(logger: Logger, selector: Selector) extends Runnable {
 
-  private val routers: Map[DatagramChannel, Router] = new ConcurrentHashMap[DatagramChannel, Router]()
+  private val routers: Map[DatagramChannel, Group] = new ConcurrentHashMap[DatagramChannel, Group]()
 
   private def requestRoute(source: InetSocketAddress, destination: DatagramChannel, now: Long): Option[(InetSocketAddress, DatagramChannel)] = {
     routers.get(destination) match {
@@ -79,5 +79,5 @@ class Dispatcher(logger: Logger, selector: Selector) extends Runnable {
 
   def numRouters = routers.size
   def routerKVs = routers.iterator
-  def addRouter(k: DatagramChannel, v: Router): Unit = routers.put(k, v)
+  def addRouter(k: DatagramChannel, v: Group): Unit = routers.put(k, v)
 }

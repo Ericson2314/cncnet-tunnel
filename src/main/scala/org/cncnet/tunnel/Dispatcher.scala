@@ -13,7 +13,7 @@ import scala.collection.immutable.{Map => IMap}
 import scala.collection.JavaConversions._
 
 
-class Dispatcher(logger: Logger, selector: Selector) extends Runnable {
+class Dispatcher(val logger: Logger, val selector: Selector) extends Runnable {
 
   private val routers: MMap[DatagramChannel, Group] = new ConcurrentHashMap[DatagramChannel, Group]()
 

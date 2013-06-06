@@ -129,8 +129,7 @@ object Main {
 
       val dispatcher = new Dispatcher(logger, selector)
 
-      val controller = new TunnelController(
-        logger,
+      val controller = new HTTPController(
         dispatcher,
         Array.range(0, maxClients).map(firstPort + _).map(createChannel),
         name,
@@ -138,7 +137,8 @@ object Main {
         firstPort,
         maxClients,
         master,
-        master)
+        master
+      )
 
       // setup our HTTP server
       val server = HttpServer.create(new InetSocketAddress(firstPort), 4)

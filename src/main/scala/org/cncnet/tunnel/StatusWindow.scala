@@ -52,15 +52,15 @@ class StatusWindow extends MainFrame {
         case 0 => logArea.append(str)
         case _ => logArea.append("\n" + str)
       }
-      statusLabel.text_=(str)
-      logArea.caret.position_=(logArea.text.length())
+      statusLabel.text = str
+      logArea.caret.position = logArea.text.length()
     })
   }
 
   def status(str: String) {
     SwingUtilities.invokeLater(() => {
-      statusLabel.text_=(str)
-      StatusWindow.this.title_=("CnCNet Tunnel - " + str)
+      statusLabel.text = str
+      StatusWindow.this.title = "CnCNet Tunnel - " + str
     })
   }
 }

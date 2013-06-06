@@ -116,8 +116,7 @@ final class HTTPController private (
     if (!pwOk) {
       // Unauthorized
       dispatcher.logger.log("Request was unauthorized.")
-      t.sendResponseHeaders(401, 0)
-      t.getResponseBody().close()
+      blankRespondHelper(401, t)
       return
     }
 

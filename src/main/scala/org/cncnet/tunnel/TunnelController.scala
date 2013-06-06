@@ -82,8 +82,6 @@ final class TunnelController private (
   private val locks: Set[InetAddress] = new HashSet[InetAddress]() with SynchronizedSet[InetAddress]
 
   private def handleRequest(t: HttpExchange) {
-    val clients: Map[InetAddress, DatagramChannel] = new HashMap[InetAddress, DatagramChannel]()
-
     val params: Array[String] = {
       val query = t.getRequestURI().getQuery()
       if (query == null) new Array[String](0) else query.split("&") // this is implicitly returned
@@ -92,7 +90,9 @@ final class TunnelController private (
 
     var pwOk: Boolean = !password.isDefined
 
-    val addresses: List[InetAddress] = params.foldLeft[List[InetAddress]](Nil)((addresses, param: String) => {
+    val addresses: HashSet[InetAddress] = new HashSet[InetAddress]
+
+    for (param: String <- params) {
       val kv: Array[String] = param.split("=")
       if (kv.length == 2) {
 
@@ -105,12 +105,18 @@ final class TunnelController private (
 
         if (kv(0) == "ip[]") {
           val newAddress: InetAddress = InetAddress.getByName(kv(1))
+          if (addresses.contains(newAddress)) {
+            logger.log("The same addresss was given twice, all players in game must come from unique address.")
+            t.sendResponseHeaders(400, 0)
+            t.getResponseBody().close()
+            return
+          }
           if (newAddress != null) {
-            addresses.::(newAddress)
-          } else addresses
-        } else addresses
-      } else addresses
-    })
+            addresses.add(newAddress)
+          }
+        }
+      }
+    }
 
     if (!pwOk) {
       // Unauthorized
@@ -138,6 +144,7 @@ final class TunnelController private (
     }
 
     val ret: StringBuilder = new StringBuilder()
+    val clients: Map[InetAddress, DatagramChannel] = new HashMap[InetAddress, DatagramChannel]()
 
     try {
       for (address: InetAddress <- addresses) {
@@ -157,14 +164,14 @@ final class TunnelController private (
       }
     }
 
-    val router: Group = Group(clients)
+    val router: Group = new Group(clients.toMap) // convert to immutable map, as groups are immutable 
 
     // lock the request ip out until this router is collected
     locks.add(requestAddress)
 
-    for ((address: InetAddress, channel: DatagramChannel) <- clients) {
-      logger.log("Port " + channel.socket().getLocalPort() + " allocated for " + address.toString() + " in router " + router.hashCode() + ".")
-      dispatcher.addRouter(channel, router)
+    for ((address: InetAddress, clientAlias: DatagramChannel) <- clients) {
+      logger.log("Port " + clientAlias.socket().getLocalPort() + " allocated for " + address.toString() + " in router " + router.hashCode() + ".")
+      dispatcher.addRouter(clientAlias, router)
     }
 
     respondHelper(200, ret, t)

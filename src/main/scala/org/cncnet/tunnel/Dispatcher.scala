@@ -6,16 +6,16 @@ import java.nio.channels.Selector
 import java.nio.ByteBuffer
 import java.net.InetSocketAddress
 import java.io.IOException
-import java.util.concurrent.BlockingQueue
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.ArrayBlockingQueue
+import java.util.concurrent.{BlockingQueue, ConcurrentHashMap, ArrayBlockingQueue}
 
-import scala.collection.mutable.Map
+import scala.collection.mutable.{Map => MMap}
+import scala.collection.immutable.{Map => IMap}
 import scala.collection.JavaConversions._
+
 
 class Dispatcher(logger: Logger, selector: Selector) extends Runnable {
 
-  private val routers: Map[DatagramChannel, Group] = new ConcurrentHashMap[DatagramChannel, Group]()
+  private val routers: MMap[DatagramChannel, Group] = new ConcurrentHashMap[DatagramChannel, Group]()
 
   private def requestRoute(source: InetSocketAddress, destination: DatagramChannel, now: Long): Option[(InetSocketAddress, DatagramChannel)] = {
     routers.get(destination) match {

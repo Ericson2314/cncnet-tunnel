@@ -33,15 +33,15 @@ class Group (
     destAlias: DatagramChannel,
     now: Long
   ): Option[(InetSocketAddress, DatagramChannel)] = (addrToAlias.get(source.getAddress()), aliasToPort.get(destAlias)) match {
-    case (None, _)                           => None  // sender not involved with this game, denied
-    case (Some(senderAlias), None)           => {     // destination client either has not connected yet, or is not part of the match
-      aliasToPort.put(senderAlias, source)            //  - update map with sender's latest port
-      None                                            //  - return failure
+    case (None, _)                           => None // sender not involved with this game, denied
+    case (Some(senderAlias), None)           => {    // destination client either has not connected yet, or is not part of the match
+      aliasToPort.put(senderAlias, source)           //  - update map with sender's latest port
+      None                                           //  - return failure
     }
-    case (Some(senderAlias), Some(destPort)) => {     // all good!
-      aliasToPort.put(senderAlias, source)            //  - update map with sender's latest port
-      lastPacket = now                                //  - update lastPacket with time packet was received
-      Some((destPort, senderAlias))                   //  - return mappings
+    case (Some(senderAlias), Some(destPort)) => {    // all good!
+      aliasToPort.put(senderAlias, source)           //  - update map with sender's latest port
+      lastPacket = now                               //  - update lastPacket with time packet was received
+      Some(destPort, senderAlias)                    //  - return mappings
     }
   }
 }

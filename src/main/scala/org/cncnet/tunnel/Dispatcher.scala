@@ -20,7 +20,7 @@ class Dispatcher(logger: Logger, selector: Selector) extends Runnable {
   private def requestRoute(source: InetSocketAddress, destination: DatagramChannel, now: Long): Option[(InetSocketAddress, DatagramChannel)] = {
     routers.get(destination) match {
       case Some(router) => router.route(source, destination, now)
-      case None => None
+      case None         => None
     }
   }
 

@@ -38,25 +38,25 @@ class StatusWindow extends MainFrame {
     add(statusLabel, BorderPanel.Position.Center)
   }
 
-  // used to convert a Unit => Unit function into a Java Runnable
-  // got it off StackOverflow
-  implicit def whateverToRunnable[F](f: => F) = new Runnable() { def run() { f } }
-
   def log(str: String) {
-    SwingUtilities.invokeLater(() => {
-      logArea.text.length() match {
-        case 0 => logArea.append(str)
-        case _ => logArea.append("\n" + str)
+    SwingUtilities.invokeLater(new Runnable() {
+      override def run() {
+        logArea.text.length() match {
+          case 0 => logArea.append(str)
+          case _ => logArea.append("\n" + str)
+        }
+        statusLabel.text = str
+        logArea.caret.position = logArea.text.length()
       }
-      statusLabel.text = str
-      logArea.caret.position = logArea.text.length()
     })
   }
 
   def status(str: String) {
-    SwingUtilities.invokeLater(() => {
-      statusLabel.text = str
-      StatusWindow.this.title = "CnCNet Tunnel - " + str
+    SwingUtilities.invokeLater(new Runnable() {
+      override def run() {
+        statusLabel.text = str
+        StatusWindow.this.title = "CnCNet Tunnel - " + str
+      }
     })
   }
 

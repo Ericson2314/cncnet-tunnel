@@ -56,8 +56,8 @@ public class ConfigurationWindow extends javax.swing.JFrame {
         jLabel2 = new javax.swing.JLabel();
         jLabel3 = new javax.swing.JLabel();
         
-        passwordField = new javax.swing.JTextField(conf.password().apply());
-        nameField = new javax.swing.JTextField(conf.password().apply());
+        passwordField = conf.password().isSupplied() ? new javax.swing.JTextField(conf.password().apply()) : new javax.swing.JTextField();
+        nameField = new javax.swing.JTextField(conf.name().apply());
         
         masterCheck = new javax.swing.JCheckBox();
         masterCheck.setSelected(!conf.nomaster().isSupplied());

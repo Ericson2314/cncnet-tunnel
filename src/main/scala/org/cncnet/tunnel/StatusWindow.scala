@@ -14,10 +14,6 @@ class StatusWindow extends MainFrame {
   title = "CnCNet Tunnel"
   iconImage = new ImageIcon("res/cncnet-icon.png").getImage()
   size = new Dimension(600, 600)
-  contents = new BoxPanel(Orientation.Vertical) {
-    contents += logPane
-    contents += statusPanel
-  }
 
   val logArea = new TextArea() {
     font = new Font("Monospaced", Font.PLAIN, 12)
@@ -62,5 +58,12 @@ class StatusWindow extends MainFrame {
       statusLabel.text = str
       StatusWindow.this.title = "CnCNet Tunnel - " + str
     })
+  }
+
+  // must be below where logPane and statusPanel are defined
+
+  contents = new BoxPanel(Orientation.Vertical) {
+    contents += logPane
+    contents += statusPanel
   }
 }
